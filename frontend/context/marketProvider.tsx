@@ -231,14 +231,19 @@ export function MarketProvider({ children }: MarketProviderProps) {
   useEffect(() => {
     const ethereum = window.ethereum
 
-    function handleAccountsChanged(...args: unknown[]) {
+    async function handleAccountsChanged(...args: unknown[]) {
       const accounts = Array.isArray(args[0]) ? (args[0] as string[]) : []
-      setAddress(accounts[0] ?? null)
+      const nextAddress = accounts[0] ?? null
+      setAddress(nextAddress)
+      addressRef.current = nextAddress
       setWalletError(null)
-      if (!accounts[0]) {
+      if (!nextAddress) {
         resetMarketSnapshot()
       } else {
         cacheRef.current = null
+        if (provider && chainId) {
+          await loadMarketItems(provider, chainId, { force: true })
+        }
       }
     }
 
@@ -257,7 +262,7 @@ export function MarketProvider({ children }: MarketProviderProps) {
       ethereum?.removeListener?.("accountsChanged", handleAccountsChanged)
       ethereum?.removeListener?.("chainChanged", handleChainChanged)
     }
-  }, [refreshMarket, resetMarketSnapshot])
+  }, [chainId, loadMarketItems, provider, resetMarketSnapshot])
 
   useEffect(() => {
     if (!provider || !chainId) {
@@ -295,10 +300,12 @@ export function MarketProvider({ children }: MarketProviderProps) {
 
       setProvider(web3Provider)
       setAddress(accounts[0] ?? null)
+      addressRef.current = accounts[0] ?? null
       setChainId(network.chainId)
       setMarketContract(getMarketplaceContract(web3Provider, network.chainId))
       setSkinContract(getSkinContract(web3Provider, network.chainId))
       setWalletError(network.chainId === SUPPORTED_CHAIN_ID ? null : "Switch MetaMask to Hardhat Localhost 31337.")
+      await loadMarketItems(web3Provider, network.chainId, { force: true })
     } catch (error) {
       const message = getWalletErrorMessage(error)
       setWalletError(message)
