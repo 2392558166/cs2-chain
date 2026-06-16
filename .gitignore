@@ -1,0 +1,50 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+.encryptedKey.json
+*.pem
+*.key
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+e2e/node_modules/
+.pnp
+.pnp.js
+
+# Build output and generated cache
+artifacts/
+cache/
+coverage/
+coverage.json
+typechain-types/
+gas-report.txt
+deployments/
+build/
+out/
+.next/
+frontend/.next/
+frontend/.swc/
+frontend/out/
+frontend/build/
+*.tsbuildinfo
+
+# Logs and debug artifacts
+*.log
+*.err.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+e2e/*.png
+e2e/_debug*.js
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Vercel
+.vercel/

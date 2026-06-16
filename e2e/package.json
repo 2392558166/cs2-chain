@@ -1,0 +1,11 @@
+{
+  "name": "cs2-marketplace-e2e",
+  "private": true,
+  "scripts": {
+    "goal12": "node goal12-local-e2e.js",
+    "perf:navigation": "node navigation-performance.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.0"
+  }
+}
