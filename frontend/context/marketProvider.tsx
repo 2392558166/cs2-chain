@@ -4,6 +4,7 @@ import { toast } from "react-toastify"
 import { MarketContext } from "./marketContext"
 import { ActiveListing, MarketItem, RefreshMarketOptions, SoldListing } from "../interfaces"
 import { decodeCS2TokenUri, getMarketplaceContract, getSkinContract } from "../utils/contracts"
+import { readLocalImage } from "../utils/localImages"
 
 type MarketProviderProps = {
   children: ReactNode
@@ -84,6 +85,7 @@ export function MarketProvider({ children }: MarketProviderProps) {
     const price = listing.price.toString()
     const tokenUri: string = await nftContract.tokenURI(tokenId)
     const metadata = parseMetadata(tokenUri)
+    const image = readLocalImage(metadata.imageStorageKey) || metadata.image || ""
     const owner = sold ? (listing as SoldListing).buyer : await nftContract.ownerOf(tokenId).catch(() => null)
 
     return {
@@ -95,8 +97,9 @@ export function MarketProvider({ children }: MarketProviderProps) {
       tokenUri,
       name: metadata.name ?? tokenUri,
       description: metadata.description ?? "",
-      image: metadata.image ?? "",
+      image,
       imageName: metadata.imageName ?? "",
+      imageStorageKey: metadata.imageStorageKey ?? "",
       weapon: metadata.weapon ?? "",
       paintKit: metadata.paintKit ?? "",
       floatValue: metadata.floatValue ?? "",

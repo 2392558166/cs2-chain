@@ -8,6 +8,7 @@ import {
   getMarketplaceContract,
   getSkinContract
 } from "../utils/contracts"
+import { createLocalImageKey, saveLocalImage } from "../utils/localImages"
 import { CS2MintInput } from "../interfaces"
 
 const MAX_IMAGE_SIZE_BYTES = 1024 * 1024
@@ -72,24 +73,33 @@ export default function CreatePage() {
     const file = event.target.files?.[0]
     if (!file) {
       setImagePreview("")
-      setForm((prev) => ({ ...prev, image: "", imageName: "" }))
+      setForm((prev) => ({ ...prev, image: "", imageName: "", imageStorageKey: "" }))
       return
     }
 
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
       event.target.value = ""
       setImagePreview("")
-      setForm((prev) => ({ ...prev, image: "", imageName: "" }))
+      setForm((prev) => ({ ...prev, image: "", imageName: "", imageStorageKey: "" }))
       toast.error("Image is too large for browser preview. Use an image under 1 MB.")
       return
     }
 
     const metadataPreview = buildPreviewPlaceholder(file.name)
+    const imageStorageKey = createLocalImageKey()
     const reader = new FileReader()
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : ""
       setImagePreview(result)
-      setForm((prev) => ({ ...prev, image: metadataPreview, imageName: file.name }))
+      if (result) {
+        saveLocalImage(imageStorageKey, result)
+      }
+      setForm((prev) => ({
+        ...prev,
+        image: metadataPreview,
+        imageName: file.name,
+        imageStorageKey
+      }))
     }
     reader.readAsDataURL(file)
   }

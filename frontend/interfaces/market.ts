@@ -10,6 +10,7 @@ export type CS2SkinMetadata = {
   description: string
   image: string
   imageName?: string
+  imageStorageKey?: string
   weapon: string
   paintKit: string
   floatValue: string
@@ -40,6 +41,7 @@ export type CS2MintInput = {
   description: string
   image: string
   imageName?: string
+  imageStorageKey?: string
   weapon: string
   paintKit: string
   floatValue: string
