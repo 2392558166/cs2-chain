@@ -11,6 +11,24 @@ import {
 import { CS2MintInput } from "../interfaces"
 
 const MAX_IMAGE_SIZE_BYTES = 80 * 1024
+const USER_REJECTED_REQUEST = 4001
+
+type TransactionStep = "mint" | "approve" | "list"
+
+function getCreateErrorMessage(error: unknown, step: TransactionStep) {
+  if (typeof error === "object" && error && "code" in error) {
+    const code = (error as { code?: number }).code
+    if (code === USER_REJECTED_REQUEST) {
+      return "Wallet request was rejected in MetaMask."
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return `The ${step} transaction failed.`
+}
 
 export default function CreatePage() {
   const { provider, chainId, connectWallet, isConnected, refreshMarket } =
@@ -72,17 +90,26 @@ export default function CreatePage() {
       return
     }
 
+    const tokenUri = buildCS2TokenUri(form)
+    let currentStep: TransactionStep = "mint"
+    let mintedTokenId: ethers.BigNumber | undefined
+
     try {
-      const tokenUri = buildCS2TokenUri(form)
       setStatus("Minting CS2 skin...")
       const mintTx = await skin.mintSkin(tokenUri)
       const mintReceipt = await mintTx.wait(1)
-      const mintedTokenId = mintReceipt.events?.[0]?.args?.tokenId
+      mintedTokenId = mintReceipt.events?.[0]?.args?.tokenId
 
+      if (!mintedTokenId) {
+        throw new Error("Mint succeeded but token ID was not found in the receipt.")
+      }
+
+      currentStep = "approve"
       setStatus("Approving marketplace...")
       const approveTx = await skin.approve(marketplace.address, mintedTokenId)
       await approveTx.wait(1)
 
+      currentStep = "list"
       setStatus("Listing skin on market...")
       const listTx = await marketplace.listItem(
         skin.address,
@@ -90,14 +117,25 @@ export default function CreatePage() {
         ethers.utils.parseEther(price)
       )
       await listTx.wait(1)
-      await refreshMarket({ force: true })
 
       setStatus(`Listed token #${mintedTokenId.toString()} successfully.`)
       toast.success("CS2 skin minted and listed.")
     } catch (error) {
       console.error(error)
-      setStatus("Transaction failed. Check wallet confirmation and input values.")
-      toast.error("Failed to mint and list CS2 skin.")
+      const message = getCreateErrorMessage(error, currentStep)
+      setStatus(`${currentStep} step failed: ${message}`)
+      toast.error(`${currentStep} step failed.`)
+      return
+    }
+
+    try {
+      await refreshMarket({ force: true })
+    } catch (error) {
+      console.error(error)
+      setStatus(
+        `Listed token #${mintedTokenId.toString()} successfully, but the page refresh failed. Open Market or refresh the browser.`
+      )
+      toast.info("Listing succeeded. Refresh the page if it does not appear immediately.")
     }
   }
 

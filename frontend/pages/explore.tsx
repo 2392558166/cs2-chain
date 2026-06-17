@@ -76,7 +76,7 @@ export default function ExplorePage() {
                       {item.weapon || "CS2 Skin"}
                     </p>
                     <p className="mt-2 text-sm text-slate-400">
-                      Add an image URL during mint to render a full card preview.
+                      Upload an image during mint to render a full card preview.
                     </p>
                   </div>
                 )}
