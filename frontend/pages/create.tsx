@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { useContext, useState } from "react"
 import { ethers } from "ethers"
 import { toast } from "react-toastify"
@@ -8,6 +9,8 @@ import {
   getSkinContract
 } from "../utils/contracts"
 import { CS2MintInput } from "../interfaces"
+
+const MAX_IMAGE_SIZE_BYTES = 80 * 1024
 
 export default function CreatePage() {
   const { provider, chainId, connectWallet, isConnected, refreshMarket } =
@@ -25,6 +28,32 @@ export default function CreatePage() {
   })
   const [price, setPrice] = useState("0.1")
   const [status, setStatus] = useState("Fill in the CS2 skin fields and a listing price.")
+  const [imagePreview, setImagePreview] = useState("")
+
+  function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) {
+      setImagePreview("")
+      setForm((prev) => ({ ...prev, image: "" }))
+      return
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      event.target.value = ""
+      setImagePreview("")
+      setForm((prev) => ({ ...prev, image: "" }))
+      toast.error("Image is too large for local on-chain metadata. Use an image under 80 KB.")
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : ""
+      setImagePreview(result)
+      setForm((prev) => ({ ...prev, image: result }))
+    }
+    reader.readAsDataURL(file)
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -97,7 +126,6 @@ export default function CreatePage() {
           ["pattern", "Pattern"],
           ["rarity", "Rarity"],
           ["exterior", "Exterior"],
-          ["image", "Image"],
           ["description", "Description"]
         ].map(([key, label]) => (
           <label className="grid gap-2 text-sm" key={key}>
@@ -109,9 +137,29 @@ export default function CreatePage() {
                 setForm((prev) => ({ ...prev, [key]: event.target.value }))
               }
               required={key !== "description"}
-            />
+              />
           </label>
         ))}
+        <label className="grid gap-2 text-sm">
+          <span className="text-slate-300">Image Upload</span>
+          <span className="text-xs text-slate-500">
+            Upload a small preview image under 80 KB. It is embedded into the NFT metadata for local testing.
+          </span>
+          <input
+            className="rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-slate-100 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-950"
+            accept="image/*"
+            type="file"
+            onChange={handleImageUpload}
+            required
+          />
+          {imagePreview ? (
+            <img
+              alt="Preview"
+              className="mt-2 max-h-56 rounded-2xl border border-white/10 object-cover"
+              src={imagePreview}
+            />
+          ) : null}
+        </label>
         <label className="grid gap-2 text-sm">
           <span className="text-slate-300">Listing Price (ETH)</span>
           <input

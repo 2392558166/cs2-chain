@@ -3,7 +3,7 @@ import { ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "react-toastify"
 import { MarketContext } from "./marketContext"
 import { ActiveListing, MarketItem, RefreshMarketOptions, SoldListing } from "../interfaces"
-import { getMarketplaceContract, getSkinContract } from "../utils/contracts"
+import { decodeCS2TokenUri, getMarketplaceContract, getSkinContract } from "../utils/contracts"
 
 type MarketProviderProps = {
   children: ReactNode
@@ -72,16 +72,7 @@ export function MarketProvider({ children }: MarketProviderProps) {
   }, [])
 
   function parseMetadata(tokenUri: string) {
-    if (!tokenUri.startsWith("data:application/json;base64,")) {
-      return {}
-    }
-
-    try {
-      const json = window.atob(tokenUri.replace("data:application/json;base64,", ""))
-      return JSON.parse(json) as Partial<MarketItem>
-    } catch {
-      return {}
-    }
+    return decodeCS2TokenUri(tokenUri) ?? {}
   }
 
   async function hydrateListing(
