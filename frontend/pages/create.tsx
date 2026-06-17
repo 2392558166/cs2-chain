@@ -10,7 +10,7 @@ import {
 } from "../utils/contracts"
 import { CS2MintInput } from "../interfaces"
 
-const MAX_IMAGE_SIZE_BYTES = 80 * 1024
+const MAX_IMAGE_SIZE_BYTES = 1024 * 1024
 const USER_REJECTED_REQUEST = 4001
 
 type TransactionStep = "mint" | "approve" | "list"
@@ -28,6 +28,26 @@ function getCreateErrorMessage(error: unknown, step: TransactionStep) {
   }
 
   return `The ${step} transaction failed.`
+}
+
+function buildPreviewPlaceholder(fileName: string) {
+  const escapedName = fileName.replace(/[<>&"]/g, "")
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="960" height="720" viewBox="0 0 960 720">
+      <defs>
+        <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+          <stop stop-color="#0f172a" offset="0"/>
+          <stop stop-color="#164e63" offset="0.55"/>
+          <stop stop-color="#f97316" offset="1"/>
+        </linearGradient>
+      </defs>
+      <rect width="960" height="720" rx="48" fill="url(#bg)"/>
+      <text x="72" y="120" fill="#67e8f9" font-family="Arial" font-size="34" letter-spacing="8">CS2 SKIN</text>
+      <text x="72" y="380" fill="#f8fafc" font-family="Arial" font-size="54" font-weight="700">${escapedName}</text>
+      <text x="72" y="462" fill="#cbd5e1" font-family="Arial" font-size="28">Local upload preview stored off-chain for this demo</text>
+    </svg>`
+
+  return `data:image/svg+xml;base64,${window.btoa(svg)}`
 }
 
 export default function CreatePage() {
@@ -52,23 +72,24 @@ export default function CreatePage() {
     const file = event.target.files?.[0]
     if (!file) {
       setImagePreview("")
-      setForm((prev) => ({ ...prev, image: "" }))
+      setForm((prev) => ({ ...prev, image: "", imageName: "" }))
       return
     }
 
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
       event.target.value = ""
       setImagePreview("")
-      setForm((prev) => ({ ...prev, image: "" }))
-      toast.error("Image is too large for local on-chain metadata. Use an image under 80 KB.")
+      setForm((prev) => ({ ...prev, image: "", imageName: "" }))
+      toast.error("Image is too large for browser preview. Use an image under 1 MB.")
       return
     }
 
+    const metadataPreview = buildPreviewPlaceholder(file.name)
     const reader = new FileReader()
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : ""
       setImagePreview(result)
-      setForm((prev) => ({ ...prev, image: result }))
+      setForm((prev) => ({ ...prev, image: metadataPreview, imageName: file.name }))
     }
     reader.readAsDataURL(file)
   }
@@ -181,7 +202,7 @@ export default function CreatePage() {
         <label className="grid gap-2 text-sm">
           <span className="text-slate-300">Image Upload</span>
           <span className="text-xs text-slate-500">
-            Upload a small preview image under 80 KB. It is embedded into the NFT metadata for local testing.
+            Upload an image under 1 MB for local preview. To keep mint gas low, the NFT stores a compact preview placeholder and the file name.
           </span>
           <input
             className="rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-slate-100 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-950"

@@ -96,6 +96,7 @@ export function MarketProvider({ children }: MarketProviderProps) {
       name: metadata.name ?? tokenUri,
       description: metadata.description ?? "",
       image: metadata.image ?? "",
+      imageName: metadata.imageName ?? "",
       weapon: metadata.weapon ?? "",
       paintKit: metadata.paintKit ?? "",
       floatValue: metadata.floatValue ?? "",
